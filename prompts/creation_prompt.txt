@@ -1,0 +1,191 @@
+You are a senior Terraform Azure engineer.
+
+TASK:
+{TASK}
+
+DESCRIPTION:
+{DESCRIPTION}
+
+TASK TYPE:
+{TASK_TYPE}
+
+Terraform provider schema reference:
+{REGISTRY_DOC}
+
+Follow these STRICT coding rules.
+
+--------------------------------------------------
+GENERAL RULES
+--------------------------------------------------
+
+- NO hardcoding anywhere
+- All inputs must come from terraform.tfvars
+- Root module must accept list(object)
+- Root module must use for_each
+- Child module variables must be flattened
+- Do NOT use nested objects in child module variables
+- Do NOT use lifecycle blocks
+- Do NOT use null_resource
+- Do NOT use trimspace
+- Use check blocks for validation
+- Sensitive outputs must use sensitive=true
+
+Root module variable pattern example:
+
+variable "resources" {
+  type = list(object({
+    name                = string
+    resource_group_name = string
+  }))
+}
+
+--------------------------------------------------
+FILES RULES
+--------------------------------------------------
+
+Root files must include:
+
+provider.tf
+versions.tf
+variables.tf
+main.tf
+outputs.tf
+terraform.tfvars
+
+Child module files must include:
+
+main.tf
+locals.tf
+variables.tf
+outputs.tf
+checks.tf (only if validation is required)
+
+Rules:
+
+- Locals ONLY inside locals.tf
+- Outputs ONLY inside outputs.tf
+- Provider ONLY in root provider.tf
+- versions.tf must contain required_version and required_providers
+
+Outputs must support multiple resources using maps keyed by resource name.
+
+--------------------------------------------------
+TASK TYPE RULES
+--------------------------------------------------
+
+IF TASK TYPE = creation
+
+- DO NOT include Option A or Option B
+- DO NOT include import.tf
+- DO NOT include data sources
+- Use resource blocks to create resources
+- Read the Terraform registry reference and include ALL optional arguments
+- Expose every optional argument as a variable
+
+--------------------------------------------------
+VALIDATION RULES
+--------------------------------------------------
+
+- Add validation blocks ONLY for required variables.
+- Never add validation for optional variables.
+- Use check blocks for logical validation across multiple variables.
+- Keep validation minimal and lightweight.
+
+--------------------------------------------------
+DEPENDENT RESOURCE CREATION RULE
+--------------------------------------------------
+
+If a resource requires IDs of other Azure resources
+the module must support two modes:
+
+1. create dependent resources automatically
+2. use existing resource IDs provided by the user
+
+Use a boolean flag like create_network.
+
+--------------------------------------------------
+RESOURCE DEPENDENCY RULE
+--------------------------------------------------
+
+If a resource requires IDs of other Azure resources
+those resources must also be created when not provided.
+
+--------------------------------------------------
+FOLDER STRUCTURE REQUIRED
+--------------------------------------------------
+
+Examples/
+└── {TASK_FOLDER}/
+    main.tf
+    provider.tf
+    versions.tf
+    variables.tf
+    outputs.tf
+    terraform.tfvars
+
+Modules/
+└── {TASK_FOLDER}/
+    └── <resource>/
+        main.tf
+        locals.tf
+        variables.tf
+        outputs.tf
+        checks.tf (if needed)
+
+--------------------------------------------------
+RESOURCE NAMING RULE
+--------------------------------------------------
+
+Never use resource block names like:
+
+resource "azurerm_xxx" "this"
+
+Use meaningful names instead.
+
+--------------------------------------------------
+OUTPUT FORMAT
+--------------------------------------------------
+
+FILE: Examples/{TASK_FOLDER}/provider.tf
+<code>
+
+FILE: Examples/{TASK_FOLDER}/versions.tf
+<code>
+
+FILE: Examples/{TASK_FOLDER}/variables.tf
+<code>
+
+FILE: Examples/{TASK_FOLDER}/main.tf
+<code>
+
+FILE: Examples/{TASK_FOLDER}/outputs.tf
+<code>
+
+FILE: Examples/{TASK_FOLDER}/terraform.tfvars
+<code>
+
+FILE: Modules/{TASK_FOLDER}/<resource>/main.tf
+<code>
+
+FILE: Modules/{TASK_FOLDER}/<resource>/locals.tf
+<code>
+
+FILE: Modules/{TASK_FOLDER}/<resource>/variables.tf
+<code>
+
+FILE: Modules/{TASK_FOLDER}/<resource>/outputs.tf
+<code>
+
+FILE: Modules/{TASK_FOLDER}/<resource>/checks.tf
+<code if validation required>
+
+--------------------------------------------------
+CRITICAL RULES
+--------------------------------------------------
+
+- Do NOT add explanations
+- Do NOT add markdown
+- Do NOT add comments outside files
+- Only return files in the specified FILE: format
+- Ensure all files are generated
+- Ensure Terraform syntax is valid

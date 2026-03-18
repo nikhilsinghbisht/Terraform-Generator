@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+<title>Terraform Generator</title>
+
+<style>
+
+body{
+font-family: Arial;
+background:#0f172a;
+color:white;
+display:flex;
+justify-content:center;
+margin-top:50px;
+}
+
+.container{
+background:#1e293b;
+padding:30px;
+border-radius:12px;
+width:650px;
+box-shadow:0 0 20px rgba(0,0,0,0.5);
+}
+
+input,textarea{
+width:100%;
+padding:12px;
+margin-top:10px;
+border-radius:6px;
+border:none;
+}
+
+button{
+margin-top:20px;
+padding:12px;
+width:100%;
+background:#38bdf8;
+border:none;
+border-radius:6px;
+cursor:pointer;
+font-size:16px;
+}
+
+button:disabled{
+background:#555;
+}
+
+.progress-bar{
+margin-top:20px;
+width:100%;
+height:20px;
+background:#334155;
+border-radius:10px;
+overflow:hidden;
+}
+
+.progress{
+height:100%;
+width:0%;
+background:#22c55e;
+transition:width 0.5s;
+}
+
+#logs{
+margin-top:20px;
+background:black;
+padding:15px;
+height:250px;
+overflow:auto;
+font-family:monospace;
+white-space:pre-wrap;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="container">
+
+<h2>Terraform Azure Generator</h2>
+
+<input id="task" placeholder="create azure storage account">
+
+<textarea id="desc"></textarea>
+
+<button id="generateBtn" onclick="generate()">Generate</button>
+
+<div class="progress-bar">
+<div class="progress" id="progress"></div>
+</div>
+
+<div id="logs"></div>
+
+</div>
+
+<script>
+
+let jobId=null;
+
+function generate(){
+
+const btn=document.getElementById("generateBtn");
+
+btn.disabled=true;
+btn.innerText="Generating...";
+
+document.getElementById("logs").innerText="";
+setProgress(10);
+
+fetch("/generate",{
+method:"POST",
+body:new URLSearchParams({
+task:document.getElementById("task").value,
+description:document.getElementById("desc").value
+})
+})
+.then(r=>r.json())
+.then(data=>{
+jobId=data.job_id;
+track(btn);
+});
+
+}
+
+function track(btn){
+
+const interval=setInterval(()=>{
+
+fetch("/status/"+jobId)
+.then(r=>r.json())
+.then(data=>{
+
+const logs=document.getElementById("logs");
+
+logs.innerText=data.logs;
+logs.scrollTop=logs.scrollHeight;
+
+updateProgress(data.logs);
+
+if(data.status==="finished"){
+
+clearInterval(interval);
+
+setProgress(100);
+
+btn.disabled=false;
+btn.innerText="Generate";
+
+downloadZip();
+
+}
+
+if(data.status==="error"){
+
+clearInterval(interval);
+
+btn.disabled=false;
+btn.innerText="Generate";
+
+alert("❌ Generation failed. Check logs.");
+
+}
+
+});
+
+},1000);
+
+}
+
+function updateProgress(logs){
+
+let p=10;
+
+if(logs.includes("Generating Terraform code")) p=30;
+if(logs.includes("Missing files")) p=50;
+if(logs.includes("Running Terraform validation")) p=70;
+if(logs.includes("Fixing Terraform errors")) p=85;
+if(logs.includes("validated successfully")) p=95;
+
+setProgress(p);
+
+}
+
+function setProgress(v){
+document.getElementById("progress").style.width=v+"%";
+}
+
+function downloadZip(){
+
+fetch("/download/"+jobId)
+.then(res=>{
+
+if(!res.ok){
+throw new Error("Download failed");
+}
+
+return res.blob();
+
+})
+.then(blob=>{
+
+const url=window.URL.createObjectURL(blob);
+
+const a=document.createElement("a");
+a.href=url;
+a.download="terraform.zip";
+
+document.body.appendChild(a);
+a.click();
+a.remove();
+
+})
+.catch(()=>{
+alert("❌ Download failed. File not ready.");
+});
+
+}
+
+</script>
+
+</body>
+
+</html>
