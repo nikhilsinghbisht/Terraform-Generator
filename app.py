@@ -2,6 +2,7 @@ import os
 import subprocess
 import uuid
 import threading
+import time
 from fastapi import FastAPI, Form
 from fastapi.responses import HTMLResponse, JSONResponse, FileResponse
 
@@ -10,6 +11,13 @@ app = FastAPI()
 jobs = {}
 
 EXPORTS_DIR = "exports"
+
+
+# --------------------------------------------------
+# Ensure exports dir exists
+# --------------------------------------------------
+if not os.path.exists(EXPORTS_DIR):
+    os.makedirs(EXPORTS_DIR)
 
 
 # --------------------------------------------------
@@ -32,7 +40,7 @@ def run_agent(job_id, task, description):
     jobs[job_id]["logs"] = ""
 
     process = subprocess.Popen(
-        ["python3", "agent.py", task, description],
+        ["python3", "agent.py", task, description, job_id],
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
         text=True
@@ -44,34 +52,24 @@ def run_agent(job_id, task, description):
     process.wait()
 
     try:
-        if not os.path.exists(EXPORTS_DIR):
-            raise Exception("exports folder not found")
+        zip_path = os.path.join(EXPORTS_DIR, f"{job_id}.zip")
 
-        # ✅ get full paths
-        files = [
-            os.path.join(EXPORTS_DIR, f)
-            for f in os.listdir(EXPORTS_DIR)
-            if f.endswith(".zip")
-        ]
+        # wait until file is actually created and written
+        for _ in range(15):
+            if os.path.exists(zip_path) and os.path.getsize(zip_path) > 0:
+                break
+            time.sleep(1)
 
-        if not files:
-            raise Exception("No zip generated")
+        if not os.path.exists(zip_path):
+            raise Exception("Zip file not created")
 
-        # 🔥 pick latest by modification time (CRITICAL FIX)
-        latest_file = max(files, key=os.path.getmtime)
-
-        latest_zip = os.path.basename(latest_file)
-
-        if not os.path.exists(latest_file):
-            raise Exception("Zip file missing")
-
-        # ✅ SUCCESS
-        jobs[job_id]["file"] = latest_zip
+        jobs[job_id]["file"] = f"{job_id}.zip"
         jobs[job_id]["status"] = "finished"
 
     except Exception as e:
         jobs[job_id]["logs"] += f"\n❌ ZIP generation failed: {str(e)}\n"
         jobs[job_id]["status"] = "error"
+
 
 # --------------------------------------------------
 # Generate API
