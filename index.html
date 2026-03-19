@@ -2,7 +2,7 @@
 <html>
 
 <head>
-<title>Terraform Generator</title>
+<title>Terraform_TFX</title>
 
 <style>
 
@@ -149,7 +149,7 @@ setProgress(100);
 btn.disabled=false;
 btn.innerText="Generate";
 
-downloadZip();
+waitAndDownload(); // FIXED
 
 }
 
@@ -188,9 +188,32 @@ function setProgress(v){
 document.getElementById("progress").style.width=v+"%";
 }
 
-function downloadZip(){
+async function waitAndDownload(){
 
-fetch("/download/"+jobId)
+const url="/download/"+jobId;
+
+// wait until file is ready (max ~10 sec)
+for(let i=0;i<10;i++){
+
+try{
+const res=await fetch(url,{method:"HEAD"});
+if(res.ok){
+downloadZip(url);
+return;
+}
+}catch(e){}
+
+await new Promise(r=>setTimeout(r,1000));
+}
+
+// fallback
+alert("❌ Download failed. File not ready.");
+
+}
+
+function downloadZip(url){
+
+fetch(url)
 .then(res=>{
 
 if(!res.ok){
@@ -202,10 +225,10 @@ return res.blob();
 })
 .then(blob=>{
 
-const url=window.URL.createObjectURL(blob);
+const fileUrl=window.URL.createObjectURL(blob);
 
 const a=document.createElement("a");
-a.href=url;
+a.href=fileUrl;
 a.download="terraform.zip";
 
 document.body.appendChild(a);
