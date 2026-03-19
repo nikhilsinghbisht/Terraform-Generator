@@ -20,7 +20,7 @@ GENERAL RULES
 
 - NO hardcoding anywhere
 - All inputs must come from terraform.tfvars
-- Root module must accept list(object)
+- Root module must accept map(object)
 - Root module must use for_each
 - Child module variables must be flattened
 - Do NOT use nested objects in child module variables
@@ -33,7 +33,7 @@ GENERAL RULES
 Root module variable pattern example:
 
 variable "resources" {
-  type = list(object({
+  type = map(object({
     name                = string
     resource_group_name = string
   }))
