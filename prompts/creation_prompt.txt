@@ -90,6 +90,23 @@ VALIDATION RULES
 - Use check blocks for logical validation across multiple variables.
 - Keep validation minimal and lightweight.
 
+MANDATORY ROOT VARIABLE VALIDATION (EXAMPLES FOLDER):
+
+
+The root variables.tf MUST include:
+
+validation {
+condition = alltrue([
+for r in var.resources :
+try(r.server_resource_id, null) != null ||
+(
+try(r.resource_group_name, null) != null &&
+try(r.server_name, null) != null
+)
+])
+error_message = "Each entry must provide EITHER server_resource_id OR BOTH resource_group_name AND server_name"
+}
+
 --------------------------------------------------
 DEPENDENT RESOURCE CREATION RULE
 --------------------------------------------------
