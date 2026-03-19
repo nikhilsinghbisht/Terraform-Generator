@@ -196,7 +196,7 @@ const url="/download/"+jobId;
 for(let i=0;i<10;i++){
 
 try{
-const res=await fetch(url,{method:"HEAD"});
+const res=await fetch(url,{method:"GET"});
 if(res.ok){
 downloadZip(url);
 return;

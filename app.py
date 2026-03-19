@@ -52,18 +52,31 @@ def run_agent(job_id, task, description):
     process.wait()
 
     try:
-        zip_path = os.path.join(EXPORTS_DIR, f"{job_id}.zip")
+        zip_file = None
 
-        # wait until file is actually created and written
+        # wait until zip is created
         for _ in range(15):
-            if os.path.exists(zip_path) and os.path.getsize(zip_path) > 0:
-                break
+            files = [f for f in os.listdir(EXPORTS_DIR) if f.endswith(".zip")]
+
+            if files:
+                # get latest zip file
+                files.sort(
+                    key=lambda x: os.path.getmtime(os.path.join(EXPORTS_DIR, x)),
+                    reverse=True
+                )
+
+                zip_file = files[0]
+                full_path = os.path.join(EXPORTS_DIR, zip_file)
+
+                if os.path.getsize(full_path) > 0:
+                    break
+
             time.sleep(1)
 
-        if not os.path.exists(zip_path):
+        if not zip_file:
             raise Exception("Zip file not created")
 
-        jobs[job_id]["file"] = f"{job_id}.zip"
+        jobs[job_id]["file"] = zip_file
         jobs[job_id]["status"] = "finished"
 
     except Exception as e:
